@@ -1,0 +1,15 @@
+{
+  "subtotal": 529,
+  "dataDeEntrega": "2021-06-05T00:12:49.807Z",
+  "valorDoFrete": 5000,
+  "totalAPagar": 5529,
+  "produtos": [
+    {
+      "id": 4,
+      "quantidade": 1,
+      "nome": "Desinfetante Uso Geral Herbal Omo Frasco 500ml",
+      "preco": 529,
+      "categoria": "Limpeza"
+    }
+  ]
+}
