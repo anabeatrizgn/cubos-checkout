@@ -20,10 +20,6 @@ const {
   validarUsuario,
 } = require("./filtros");
 
-const {
-  lerRelDeVendas,
-  atualizarRelDeVendas
-} = require("./controleVendas");
 
 const produtosDisponiveis = async (req, res) => {
   let produtos = await conferirEstoque();
@@ -163,38 +159,16 @@ const finalizarCompra = async (req, res) => {
     return;
   }
 
-  if (req.query.cupom) {
-    carrinho.totalAPagar = carrinho.totalAPagar - carrinho.totalAPagar*Number(req.query.cupom)
-  }
-
-  const dadosDaCompra = {
-    amount: carrinho.totalAPagar,
-    payment_methot: 'boleto',
-    boleto_expiration_date: addBusinessDays(new Date(), 3),
-    costumer: req.body
-  };
-
-try{
-  const pedido = await axios.post(`https://api.pagar.me/1/transactions?api_key=ak_test_rFF3WFkcS9DRdBK7Ocw6QOzOOQEScS`, dadosDaCompra);
- console.log(pedido);
-  res.json({
-    mensagem: "Pedido entregue com sucesso",
-    dadosDoPedido: carrinho,
-    linkBoleto: pedido.data.boleto_url
-  });
-} catch(error) {
-  console.log(error);
-}
+  const carrinhoFechado = carrinho;
   
-
- 
-
-  const vendas = await lerRelDeVendas();
-  vendas.push(pedido.data.acquirer_id);
-  await atualizarRelDeVendas(vendas);
-
   carrinho = await zerarCarrinho();
   await atualizarCarrinho(carrinho);
+
+    res.json({
+    mensagem: "Pedido entregue com sucesso",
+    dadosDoPedido: carrinhoFechado,
+  });
+  
 };
 
 
