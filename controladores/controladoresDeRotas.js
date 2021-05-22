@@ -20,7 +20,6 @@ const {
   validarUsuario,
 } = require("./filtros");
 
-
 const produtosDisponiveis = async (req, res) => {
   let produtos = await conferirEstoque();
 
@@ -143,6 +142,17 @@ const finalizarCompra = async (req, res) => {
   const produtos = await conferirEstoque();
 
   for (let unid of carrinho.produtos) {
+    let qtdMenorQueEstoque = produtos.find(
+      (produto) => produto.id === unid.id && produto.estoque < unid.estoque
+    );
+    if (qtdMenorQueEstoque) {
+      return res.json({
+        mensagem: `${qtdMenorQueEstoque.nome} tem ${qtdMenorQueEstoque.estoque} de produto(s) em estoque`,
+      });
+    }
+  }
+
+  for (let unid of carrinho.produtos) {
     produtos.forEach(
       (produto) => produto.id === unid.id,
       (estoque = await abaterEstoque(unid)),
@@ -159,18 +169,37 @@ const finalizarCompra = async (req, res) => {
     return;
   }
 
+  if (req.query.cupom) {
+    carrinho.totalAPagar =
+      carrinho.totalAPagar -
+      (carrinho.totalAPagar * Number(req.query.cupom)) / 100;
+  }
+
+  // const pedido = await axios.post(
+  //   "https://api.pagar.me/1/transactions?api_key=ak_test_rFF3WFkcS9DRdBK7Ocw6QOzOOQEScS",
+  //   JSON.stringify({
+  //     amount: carrinho.totalAPagar,
+  //     payment_method: "boleto",
+  //     boleto_expiration_date: addBusinessDays(new Date(), 3),
+  //     customer: req.body,
+  //   })
+  // );
+
+  // const vendas = await lerRelDeVendas();
+  // vendas.push(pedido.data.acquirer_id);
+  // await atualizarRelDeVendas(vendas);
+
   const carrinhoFechado = carrinho;
-  
+
   carrinho = await zerarCarrinho();
   await atualizarCarrinho(carrinho);
 
-    res.json({
+  res.json({
     mensagem: "Pedido entregue com sucesso",
     dadosDoPedido: carrinhoFechado,
+    //linkBoleto: pedido.data.boleto_url,
   });
-  
 };
-
 
 module.exports = {
   produtosDisponiveis,
