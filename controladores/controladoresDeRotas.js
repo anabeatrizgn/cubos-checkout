@@ -7,18 +7,18 @@ const {
   zerarCarrinho,
   adicionarAoCarrinho,
   excluirDoCarrinho,
-} = require("./carrinho");
+} = require("./utilitários/carrinho");
 const {
   conferirEstoque,
   atualizarEstoque,
   abaterEstoque,
-} = require("./estoque");
+} = require("./utilitários/estoque");
 const {
   filtrarProduto,
   filtrarPrecoMin,
   filtrarPrecoMax,
   validarUsuario,
-} = require("./filtros");
+} = require("./utilitários/filtros");
 
 const produtosDisponiveis = async (req, res) => {
   let produtos = await conferirEstoque();
@@ -28,18 +28,18 @@ const produtosDisponiveis = async (req, res) => {
   }
 
   if (req.query.precoInicial) {
-    produtos = await filtrarPrecoMin(produtos, req.query.precoInicial);
+    produtos = await filtrarPrecoMin(produtos, Number(req.query.precoInicial));
   }
 
   if (req.query.precoFinal) {
-    produtos = await filtrarPrecoMax(produtos, req.query.precoFinal);
+    produtos = await filtrarPrecoMax(produtos, Number(req.query.precoFinal));
   }
 
   if (produtos.length > 0) {
-    res.json(produtos);
+    res.status(200).json(produtos);
     return;
   } else {
-    res.json({
+    res.status(404).json({
       mensagem: "Produto não encontrado",
     });
   }
@@ -47,7 +47,7 @@ const produtosDisponiveis = async (req, res) => {
 
 const produtosNoCarrinho = async (req, res) => {
   const carrinho = await lerCarrinho();
-  return res.json(carrinho);
+  return res.status(200).json(carrinho);
 };
 
 const inserirProdutosCarrinho = async (req, res) => {
@@ -65,14 +65,14 @@ const inserirProdutosCarrinho = async (req, res) => {
       let carrinho = await lerCarrinho();
       carrinho = await adicionarAoCarrinho(carrinho, itemNoCarrinho);
       await atualizarCarrinho(carrinho);
-      res.json(carrinho);
+      res.status(201).json(carrinho);
     } else {
-      res.json({
+      res.status(400).json({
         mensagem: `${item.estoque} é a quantidade do produto ${item.nome} disponível em estoque`,
       });
     }
   } else {
-    res.json({
+    res.status(401).json({
       mensagem: "Id incorreto ou não existe",
     });
   }
@@ -88,7 +88,7 @@ const editarCarrinho = async (req, res) => {
     (produto) => itemParaEditar.id === produto.id
   );
   if (index === -1) {
-    res.json({
+    res.status(404).json({
       mensagem: "O id informado não corresponde a nenhum produto do carrinho",
     });
   } else {
@@ -97,17 +97,17 @@ const editarCarrinho = async (req, res) => {
     if (item) {
       const quantidadeTotal = (carrinho.produtos[index].quantidade +=
         itemParaEditar.quantidade);
-      if (item.estoque >= quantidadeTotal) {
+      if (item.estoque >= quantidadeTotal || quantidadeTotal >= 0) {
         carrinho.produtos[index].quantidade = quantidadeTotal;
         await atualizarCarrinho(carrinho);
         res.json(carrinho);
       } else {
-        res.json({
+        res.status(400).json({
           mensagem: `${item.estoque} é a quantidade do produto ${item.nome} disponível em estoque`,
         });
       }
     } else {
-      res.json({
+      res.status(401).json({
         mensagem: "Id incorreto",
       });
     }
@@ -118,13 +118,13 @@ const excluirProduto = async (req, res) => {
   let carrinho = await lerCarrinho();
   carrinho = await excluirDoCarrinho(carrinho, Number(req.params.idProduto));
   await atualizarCarrinho(carrinho);
-  res.json(carrinho);
+  res.status(201).json(carrinho);
 };
 
 const limparCarrinho = async (req, res) => {
   const carrinho = await zerarCarrinho();
   await atualizarCarrinho(carrinho);
-  res.json({
+  res.status(200).json({
     mensagem: "Operação concluída com sucesso",
   });
 };
@@ -133,7 +133,7 @@ const finalizarCompra = async (req, res) => {
   let carrinho = await lerCarrinho();
 
   if (carrinho.produtos.length === 0) {
-    res.json({
+    res.status(400).json({
       mensagem: "Carrinho vazio",
     });
     return;
@@ -163,7 +163,7 @@ const finalizarCompra = async (req, res) => {
   const erro = await validarUsuario(req.body);
 
   if (erro) {
-    res.json({
+    res.status(401).json({
       mensagem: `${erro}`,
     });
     return;
@@ -194,7 +194,7 @@ const finalizarCompra = async (req, res) => {
   carrinho = await zerarCarrinho();
   await atualizarCarrinho(carrinho);
 
-  res.json({
+  res.status(201).json({
     mensagem: "Pedido entregue com sucesso",
     dadosDoPedido: carrinhoFechado,
     //linkBoleto: pedido.data.boleto_url,
